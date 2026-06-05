@@ -45,6 +45,7 @@ import { ToastContainer, ToastMessage } from './components/Toast';
 import { Sidebar } from './components/Sidebar';
 import { ProfileTable } from './components/ProfileTable';
 import { ProfileModal } from './components/ProfileModal';
+import { Login } from './components/Login';
 
 export default function App() {
   // --- Persistent Storage Loading ---
@@ -102,6 +103,12 @@ export default function App() {
   });
 
   // --- Dynamic UI State ---
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem('cdpm_logged_in') === 'true' || sessionStorage.getItem('cdpm_logged_in') === 'true';
+  });
+  const [loggedUser, setLoggedUser] = useState<string>(() => {
+    return localStorage.getItem('cdpm_logged_user') || sessionStorage.getItem('cdpm_logged_user') || 'admin';
+  });
   const [activePage, setActivePage] = useState<string>('profiles');
   
   // --- Proxy Page states ---
@@ -157,6 +164,23 @@ export default function App() {
 
   // Timer reference for active run duration counter
   const runTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // --- Auth Handlers ---
+  const handleLoginSuccess = (user: string) => {
+    setIsLoggedIn(true);
+    setLoggedUser(user);
+    addToast('success', `Chào mừng ${user} trở lại hệ thống!`, 'Đăng nhập thành công');
+    addSystemLog('Hệ thống', 'success', `Người dùng "${user}" đăng nhập bảng điều khiển thành công.`);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('cdpm_logged_in');
+    localStorage.removeItem('cdpm_logged_user');
+    sessionStorage.removeItem('cdpm_logged_in');
+    sessionStorage.removeItem('cdpm_logged_user');
+    setIsLoggedIn(false);
+    addToast('info', 'Bạn đã đăng xuất khỏi hệ thống thành công.', 'Đăng xuất');
+  };
 
   // --- Save states persistently ---
   useEffect(() => {
@@ -722,6 +746,15 @@ export default function App() {
 
   const totalCookiesSum = profiles.reduce((sum, p) => sum + p.cookiesCount, 0);
 
+  if (!isLoggedIn) {
+    return (
+      <>
+        <Login onLoginSuccess={handleLoginSuccess} />
+        <ToastContainer toasts={toasts} onCloseToast={removeToast} />
+      </>
+    );
+  }
+
   return (
     <div className="h-screen max-h-screen overflow-hidden bg-slate-50 text-slate-800 flex flex-col font-sans select-none antialiased">
       
@@ -773,6 +806,21 @@ export default function App() {
             <Plus className="w-4 h-4" />
             <span>Tạo Profile Mới</span>
           </button>
+
+          {/* User Account Info and Logout */}
+          <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3.5 ms-1.5 h-6">
+            <div className="hidden sm:flex flex-col text-right leading-none">
+              <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wide">Tài khoản</span>
+              <span className="text-xs font-bold text-slate-700 capitalize mt-0.5">{loggedUser}</span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50/50 rounded-lg transition cursor-pointer"
+              title="Đăng xuất khỏi hệ thống"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </header>      {/* Dynamic Bulk Action Context toolbar popup */}
       {selectedIds.length > 0 && (
