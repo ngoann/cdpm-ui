@@ -18,7 +18,8 @@ import {
   Activity,
   CheckCircle,
   AlertTriangle,
-  PlayCircle
+  PlayCircle,
+  Tv
 } from 'lucide-react';
 import { BrowserProfile } from '../types';
 
@@ -66,6 +67,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <Layers className="w-4 h-4" />,
       badge: totalCount > 0 ? totalCount : undefined,
       color: 'text-slate-700'
+    },
+    {
+      id: 'videos',
+      label: 'Quản lý Video',
+      icon: <Tv className="w-4 h-4" />,
+      color: 'text-indigo-600'
     },
     {
       id: 'proxies',

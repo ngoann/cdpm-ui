@@ -51,3 +51,45 @@ export interface ActivityLog {
   type: 'info' | 'success' | 'warning' | 'error';
   message: string;
 }
+
+export type VideoStatus = 'prepare' | 'pending' | 'rendering' | 'preparing_upload_to_channel' | 'failed_to_upload_to_channel' | 'uploaded_to_channel' | 'uploading';
+export type VideoResolution = '1920x1080' | '1280x720';
+export type VideoVoice = 'voicevox' | 'google_voice' | 'voice_clone';
+
+export interface Channel {
+  id: string;
+  avatar: string;
+  title: string;
+  groupName: string;
+  subscriberCount: number;
+  viewCount: number;
+  incompleteVideosCount: number;
+  completedVideosCount: number;
+}
+
+export interface Video {
+  id: string;
+  status: VideoStatus;
+  title: string;
+  thumbnailUrl: string;
+  youtubeVideoId: string;
+  resolution: VideoResolution;
+  voice: VideoVoice;
+  hasVideo: boolean;
+  hasAudio: boolean;
+  hasSubtitle: boolean;
+  hasThumbnail: boolean;
+  hasContent: boolean;
+  hasTitle: boolean;
+  hasThumbnailText: boolean;
+  createdAt: string;
+  updatedAt: string;
+  transcript: string;
+  description: string;
+  content: string;
+  thumbnailText: string;
+  viThumbnailText: string;
+  channelId: string;
+  videoUrl: string;
+}
+

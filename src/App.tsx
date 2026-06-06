@@ -39,13 +39,14 @@ import {
 } from 'lucide-react';
 
 import { BrowserProfile, ProxyConfig, ActivityLog, ProfileStatus } from './types';
-import { INITIAL_PROFILES, INITIAL_GROUPS, INITIAL_TAGS } from './mockData';
+import { INITIAL_PROFILES, INITIAL_GROUPS, INITIAL_TAGS, MOCK_CHANNELS, MOCK_VIDEOS } from './mockData';
 import { generateRandomPID, generateRandomPort, generateRandomSize } from './utils/browserInfo';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { Sidebar } from './components/Sidebar';
 import { ProfileTable } from './components/ProfileTable';
 import { ProfileModal } from './components/ProfileModal';
 import { Login } from './components/Login';
+import { VideoManager } from './components/VideoManager';
 
 export default function App() {
   // --- Persistent Storage Loading ---
@@ -147,6 +148,33 @@ export default function App() {
   // Modal control state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<BrowserProfile | null>(null);
+
+  // Confirmation state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+    confirmText?: string;
+  } | null>(null);
+
+  const openConfirm = (
+    title: string,
+    description: string,
+    onConfirm: () => void,
+    confirmText = 'Xác nhận xóa'
+  ) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      description,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmModal(null);
+      },
+      confirmText
+    });
+  };
 
   // Toast notifications state
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -344,12 +372,16 @@ export default function App() {
       return;
     }
 
-    if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn Browser Profile "${prof.name}"? Dữ liệu cookie sẽ mất.`)) {
-      setProfiles(prev => prev.filter(p => p.id !== id));
-      setSelectedIds(prev => prev.filter(x => x !== id));
-      addSystemLog(prof.name, 'warning', `Đã xóa bóc tách profile khỏi cơ sở dữ liệu local.`);
-      addToast('success', `Đã xóa thành công profile "${prof.name}".`, 'Thực thi thành công');
-    }
+    openConfirm(
+      'Xóa vĩnh viễn Browser Profile?',
+      `Bạn có chắc chắn muốn xóa vĩnh viễn Browser Profile "${prof.name}"? Dữ liệu cookie cấu hình của profile này sẽ bị mất toàn bộ.`,
+      () => {
+        setProfiles(prev => prev.filter(p => p.id !== id));
+        setSelectedIds(prev => prev.filter(x => x !== id));
+        addSystemLog(prof.name, 'warning', `Đã xóa bóc tách profile khỏi cơ sở dữ liệu local.`);
+        addToast('success', `Đã xóa thành công profile "${prof.name}".`, 'Thực thi thành công');
+      }
+    );
   };
 
   const handleDuplicateProfile = (id: string) => {
@@ -560,12 +592,16 @@ export default function App() {
       return;
     }
 
-    if (window.confirm(`CẢNH BÁO: Bạn có muốn xóa đồng loạt ${selectedIds.length} profile đã chọn không?`)) {
-      setProfiles(prev => prev.filter(p => !selectedIds.includes(p.id)));
-      addSystemLog('Thao tác hàng loạt', 'warning', `Đã xóa sạch ${selectedIds.length} profiles.`);
-      addToast('success', `Xóa thành công ${selectedIds.length} profiles.`, 'Đã dọn dẹp');
-      setSelectedIds([]);
-    }
+    openConfirm(
+      'Xóa hàng loạt Browser Profiles?',
+      `CẢNH BÁO: Bạn thật sự mong muốn xóa đồng loạt và vĩnh viễn ${selectedIds.length} profiles đã lựa chọn này không? Hành động này không thể hoàn tác.`,
+      () => {
+        setProfiles(prev => prev.filter(p => !selectedIds.includes(p.id)));
+        addSystemLog('Thao tác hàng loạt', 'warning', `Đã xóa sạch ${selectedIds.length} profiles.`);
+        addToast('success', `Xóa thành công ${selectedIds.length} profiles.`, 'Đã dọn dẹp');
+        setSelectedIds([]);
+      }
+    );
   };
 
   const handleApplyBatchTag = () => {
@@ -1160,6 +1196,16 @@ export default function App() {
               proxyTestLoadingId={proxyTestLoadingId}
             />
           </div>
+        )}
+
+        {/* --- PAGE 5: VIDEO MANAGER (Quản lý Video) --- */}
+        {activePage === 'videos' && (
+          <VideoManager
+            initialChannels={MOCK_CHANNELS}
+            initialVideos={MOCK_VIDEOS}
+            addToast={addToast}
+            addSystemLog={addSystemLog}
+          />
         )}
 
         {/* --- PAGE 2: PROXY MANAGER (Quản lý Proxy) --- */}
@@ -1850,6 +1896,43 @@ export default function App() {
         groups={groups}
         tags={tags}
       />
+
+      {/* Dynamic Confirmation Dialog Modal */}
+      {confirmModal && confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full border border-slate-150 overflow-hidden transform scale-100 transition-all">
+            <div className="p-5 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-500 animate-pulse" />
+              </div>
+              <div className="space-y-1 flex-1 select-none font-sans">
+                <h4 className="text-sm font-black text-slate-800 leading-snug">
+                  {confirmModal.title}
+                </h4>
+                <p className="text-xs text-slate-505 leading-relaxed font-semibold">
+                  {confirmModal.description}
+                </p>
+              </div>
+            </div>
+            <div className="bg-slate-50 px-5 py-3 flex items-center justify-end gap-2 border-t border-slate-150/65">
+              <button
+                type="button"
+                onClick={() => setConfirmModal(null)}
+                className="px-4 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-xs font-bold text-slate-605 transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={confirmModal.onConfirm}
+                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 border border-rose-600 hover:border-rose-700 text-white rounded-lg text-xs font-bold transition cursor-pointer shadow-sm"
+              >
+                {confirmModal.confirmText || 'Xác nhận xóa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dynamic notifications popups viewport container */}
       <ToastContainer
